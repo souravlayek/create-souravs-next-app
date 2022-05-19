@@ -1,0 +1,34 @@
+{
+  "name": "create-souravs-next-app",
+  "version": "1.0.3",
+  "description": "CLI command to install my boilerplate",
+  "main": "./index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "create-souravs-next-app": "node ./index.js"
+  },
+  "bin": "./index.js",
+  "author": {
+    "name": "Sourav Layek",
+    "email": "souravlayek11@gmail.com",
+    "url": "https://souravlayek.com"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "cli-spinners": "^2.6.1",
+    "commander": "^9.2.0",
+    "envinfo": "^7.8.1",
+    "process": "^0.11.10",
+    "readline": "^1.3.0"
+  },
+  "eslintConfig": {
+    "ignore": [
+      "node_modules",
+      "template"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^17.0.34"
+  }
+}
