@@ -86,7 +86,7 @@ const deleteFolders = (path) => {
 
 
 const updatePackageJSON = (projectName) => {
-  const packageJsonPath = path.join(__dirname, `${projectName}/package.json`);
+  const packageJsonPath = path.join(process.cwd(), `${projectName}/package.json`);
   const templatePackageJsonPath = path.join(__dirname, "template/package.json");
   const packageJson = require(packageJsonPath);
   const templatePackageJson = require(templatePackageJsonPath);
