@@ -32,21 +32,31 @@ const init = async () => {
   const program = new commander.Command(packageJson.name)
     .version(packageJson.version)
     .description(packageJson.description)
-    .arguments("<project-directory>")
-    .action((name) => {
+    .argument('<project-name>', 'Project name')
+    .option('-r, --redux', 'Redux Configuration')
+    .action((name, options,command) => {
       projectName = name;
+      console.log(name, options, command.opts());
     })
-    .parse(process.argv)
-    .on("--help", () => {
-      console.log("Fuck you bro");
-    });
+    .on('--help', () => {
+      console.log('')
+      console.log('  Examples:')
+      console.log('')
+      console.log('')
+    }).parse();
+  // if (!projectName) {
+  //   program.help();
+  //   return;
+  // }
 
-  if (!projectName) {
-    program.help();
-    return;
-  }
+const options = program.opts();
+if (options.redux) console.log(options);
+  return
+
+
   let i = 0;
   let stepCounter = 0;
+
   const timer = setInterval(() => {
     process.stdout.write(
       `\r ${info(
@@ -54,6 +64,8 @@ const init = async () => {
       )} ${info(STEPS[stepCounter])}`
     );
   }, cliSpinners.dots.interval);
+
+
   exec(
     `npx create-next-app ${projectName} --typescript`,
     (err, stdout, stderr) => {
@@ -94,5 +106,3 @@ const init = async () => {
 };
 
 init();
-//     clearInterval(timer);
-// readline.clearLine(process.stdout, 0);
