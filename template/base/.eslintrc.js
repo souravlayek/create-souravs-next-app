@@ -59,7 +59,9 @@ module.exports = {
             allowConciseArrowFunctionExpressionsStartingWithVoid: true,
           },
         ],
-        'prettier/prettier': ['error', {}, { usePrettierrc: true }], // Includes .prettierrc.js rules
+        'prettier/prettier': ['error',{
+          'endOfLine': 'auto',
+        }, { usePrettierrc: true }], // Includes .prettierrc.js rules
       },
     },
   ],
