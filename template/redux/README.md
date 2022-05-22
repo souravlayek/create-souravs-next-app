@@ -7,7 +7,6 @@
 This is a easy to use code template generator for your next js project, with a easy CLI based prompt to configure the project.
 
 ## What you get
-
 - Pre configured template
 - choose between different state management template (redux or contextAPI)
 - Industry standard folder and file structure [Checkout here to understand the folder structure better](https://medium.com/@layeksourav/the-best-way-to-organize-your-react-project-ed3e951ee8b0)
@@ -16,6 +15,7 @@ This is a easy to use code template generator for your next js project, with a e
 - support of Typescript
 - auto linting before git commit
 - support SASS
+- Support PWA(Progressive Web App)
 
 
 ## To run your application

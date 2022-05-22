@@ -15,6 +15,7 @@ This is a easy to use code template generator for your next js project, with a e
 - support of Typescript
 - auto linting before git commit
 - support SASS
+- Support PWA(Progressive Web App)
 
 ## To run your application
 ---
