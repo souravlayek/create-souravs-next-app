@@ -60,7 +60,7 @@ const copyContentOfFolder = (source, target) => {
             copyFileSync(curSource, target);
           }
         });
-        resolve("Done");
+        resolve({status: "success"});
       }
     } catch (error) {
       reject(error);

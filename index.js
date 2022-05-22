@@ -14,20 +14,18 @@ const headingString = `
 
 `
 
-const { Command } = require('commander');
 const { exec } = require("child_process");
-const packageJson = require("./package.json");
 const cliSpinners = require("cli-spinners");
 const process = require("process");
 const readline = require("readline");
 const chalk = require("chalk");
 const path = require("path");
+const fs = require("fs");
 const inquirer = require("inquirer");
 const clear = require('clear');
 const {
   copyContentOfFolder,
   deleteFolders,
-  updatePackageJSON,
 } = require("./utils");
 
 
@@ -51,104 +49,13 @@ const showSuccess = (msg) => {
   console.log(success(msg))
   console.log("")
 }
-const showSInfo = (msg) => {
+const showInfo = (msg) => {
   console.log("")
   console.log(info(msg))
   console.log("")
 }
 
 
-const STEPS = [
-  "Creating project...",
-  "Updating folder structure...",
-  "Installing dependencies...",
-];
-
-// const init = async () => {
-//   const program = new commander.Command(packageJson.name)
-//     .version(packageJson.version)
-//     .description(packageJson.description)
-//     .argument('<project-name>', 'Project name')
-//     .option('-r, --redux', 'Redux Configuration')
-//     .action((name, options,command) => {
-//       projectName = name;
-//       console.log(name, options, command.opts());
-//     })
-//     .on('--help', () => {
-//       console.log('')
-//       console.log('  Examples:')
-//       console.log('')
-//       console.log('')
-//     }).parse();
-//   // if (!projectName) {
-//   //   program.help();
-//   //   return;
-//   // }
-//   return;
-//   let i = 0;
-//   let stepCounter = 0;
-
-//   const timer = setInterval(() => {
-//     process.stdout.write(
-//       `\r ${info(
-//         `${cliSpinners.dots.frames[i++ % cliSpinners.dots.frames.length]}`
-//       )} ${info(STEPS[stepCounter])}`
-//     );
-//   }, cliSpinners.dots.interval);
-
-//   exec(
-//     `npx create-next-app ${projectName} --typescript`,
-//     (err, stdout, stderr) => {
-//       if (err) {
-//         console.error(error(err));
-//         return;
-//       }
-//       readline.clearLine(process.stdout, 0);
-//       console.log(warning(stderr));
-//       stepCounter++;
-//       deleteFolders(path.join(__dirname, `${projectName}/pages`));
-//       deleteFolders(path.join(__dirname, `${projectName}/styles`));
-//       deleteFolders(path.join(__dirname, `${projectName}/public`));
-
-//       updatePackageJSON(projectName);
-//       copyContentOfFolder(
-//         path.join(__dirname, "template/baseTemplate"),
-//         projectName
-//       )
-//         .then(() => {
-//           stepCounter++;
-//           readline.clearLine(process.stdout, 0);
-//           exec(`npm install`, (err, stdout, stderr) => {
-//             stepCounter++;
-//             readline.clearLine(process.stdout, 0);
-//             clearInterval(timer);
-//             console.log("\n");
-//             process.stdout.write(success("Successfully created project!"));
-//           });
-//         })
-//         .catch((err) => {
-//           readline.clearLine(process.stdout, 0);
-//           console.log(error(err));
-//           throw err;
-//         });
-//     }
-//   );
-// };
-
-// const cleanInit = async () => {
-//   const program = new Command(packageJson.name);
-// program.option('-r, --redux', 'Redux Configuration');
-//   program.parse(process.argv);
-//   console.log(process.argv)
-
-//   const options = program.opts();
-//   console.log(options);
-//   if (options.redux === undefined) console.log("no redux");
-//   else if (options.redux === true) console.log("add redux");
-//   else console.log(`add redux type ${options.cheese}`);
-// };
-
-// cleanInit();
 const formInput = async () => {
   return new Promise((resolve, reject) => {
     inquirer.prompt(
@@ -213,6 +120,24 @@ const greet = () => {
   console.log("")
 }
 
+const commandExecutor = async (command) => {
+  return new Promise((resolve, reject) => {
+    exec(command, (err, stdout, stderr) => {
+      if (err) {
+        reject(err)
+      }
+      if(stderr){
+        showWarning(stderr)
+      }
+      resolve({
+        status: 'success',
+        stdout,
+        stderr,
+      })
+    })
+  })
+}
+
 const readyPrompt = inquirer.createPromptModule();
 
 const checkIsUserReady = async () => {
@@ -231,25 +156,170 @@ const checkIsUserReady = async () => {
     })
   })
 }
+
+const installDependencies = async (projectPath) => {
+  const res = await commandExecutor(`cd ${projectPath} && npm install`)
+  if (res.status === 'success') {
+    return true
+  } else {
+    return false;
+  }
+}
+
+const createBaseProject = async (projectName) => {
+  const res = await commandExecutor(`npx create-next-app ${projectName} --typescript`)
+  if(res.status === 'success'){
+    return true
+  }
+  return false
+}
+
+const clearBaseFolders = async (projectPath) => {
+  deleteFolders(path.join(projectPath, 'pages'))
+  deleteFolders(path.join(projectPath, 'public'))
+  deleteFolders(path.join(projectPath, 'styles'))
+}
+
+const initGit = async (projectPath) => {
+  const res = await commandExecutor(`cd ${projectPath} && git init`)
+  if(res.status === 'success'){
+    return true
+  }
+  return false
+}
+
+let STEP_COUNTER = 0;
+let i = 0;
+
+const STEPS = [
+  'Creating project folder',
+  'Creating folder structure based on your requirements',
+  'Initializing git',
+  'Installing dependencies',
+]
+
 const init = async () => {
   greet()
   try {
     const res = await checkIsUserReady();
     if(res.isReady) {
-      const res = await formInput();
-      if(res.status !== 'success') {
+      const formResponse = await formInput();
+      if(formResponse.status !== 'success') {
         throw Error("Something went wrong");
       }
-      const { projectName, description, stateManagement } = res.answers;
-      // perform future task here
+      const { projectName, description, stateManagement } = formResponse.answers;
+      const isRedux = stateManagement === 'Redux';
+      const isContextAPI = stateManagement === 'ContextAPI';
+      const isNone = stateManagement === 'None';
+
       clear();
-      console.log(res.answers)
+
+      const timer = setInterval(() => {
+        process.stdout.write(
+          `\r ${info(
+            `${cliSpinners.dots.frames[i++ % cliSpinners.dots.frames.length]}`
+          )} ${info(STEPS[STEP_COUNTER])}`
+        );
+      }, cliSpinners.dots.interval);
+
+      const isSuccessFullyCreated = await createBaseProject(projectName);
+      if(!isSuccessFullyCreated) {
+        showError("Something went wrong while creating the project")
+        clearInterval(timer);
+        clear();
+        return;
+      }
+
+      STEP_COUNTER++;
+      readline.clearLine(process.stdout, 0);
+
+      const templatePath = path.join(__dirname, 'template');
+      const projectPath = path.join(process.cwd(), projectName);
+
+      clearBaseFolders(projectPath);
+
+      if(isNone){
+        const baseTemplatePath = path.join(templatePath, 'base');
+        const contentCopyActionResponse = await copyContentOfFolder(baseTemplatePath, projectPath);
+        if(contentCopyActionResponse.status !== 'success') {
+          showError("Something went wrong while copying the content")
+          clearInterval(timer);
+          clear();
+          return;
+        }
+      }
+      if(isRedux){
+        const reduxTemplatePath = path.join(templatePath, 'redux');
+        const contentCopyActionResponse = await copyContentOfFolder(reduxTemplatePath, projectPath);
+        if(contentCopyActionResponse.status !== 'success') {
+          showError("Something went wrong while copying the content")
+          clearInterval(timer);
+          clear();
+          return;
+        }
+      }
+      if(isContextAPI){
+        const contextApiTemplatePath = path.join(templatePath, 'context');
+        const contentCopyActionResponse = await copyContentOfFolder(contextApiTemplatePath, projectPath);
+        if(contentCopyActionResponse.status !== 'success') {
+          showError("Something went wrong while copying the content")
+          clearInterval(timer);
+          clear();
+          return;
+        }
+      }
+      const packageJsonPath = path.join(
+        process.cwd(),
+        projectName,
+        "package.json"
+      );
+      const myPackageJSON = JSON.parse(
+        fs.readFileSync(packageJsonPath, "utf8")
+      );
+
+      myPackageJSON.name = projectName;
+      myPackageJSON.description = description;
+
+      fs.writeFileSync(packageJsonPath, JSON.stringify(myPackageJSON, null, 2));
+
+
+      STEP_COUNTER++;
+      readline.clearLine(process.stdout, 0);
+
+      const isInitGitSuccess = await initGit(projectPath);
+      if(!isInitGitSuccess) {
+        showError("Something went wrong while initializing git")
+        clearInterval(timer);
+        clear();
+        return;
+      }
+
+      STEP_COUNTER++;
+      readline.clearLine(process.stdout, 0);
+
+      const isDependenciesInstalled = await installDependencies(projectPath);
+
+      if(!isDependenciesInstalled) {
+        showError("Something went wrong while installing dependencies")
+        clearInterval(timer);
+        clear();
+        return;
+      }
+
+      clearInterval(timer);
+      clear();
+
+      showSuccess(`${projectName} project created successfully`);
+      showInfo(`To start your project, run ${warning.bold(`cd ${projectName}`)} and ${warning.bold(`npm run dev`)}`);
+
     }else {
       showError("Bye!")
     }
 
   } catch (error) {
     showError("Something went wrong")
+    console.log(error)
+    process.exit(1);
   }
 }
 
