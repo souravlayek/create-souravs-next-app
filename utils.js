@@ -84,6 +84,16 @@ const deleteFolders = (path) => {
   }
 }
 
+const deleteFile = (path) => {
+  if(fs.existsSync(path)) {
+    if(!fs.lstatSync(path).isDirectory()) {
+      fs.unlinkSync(path)
+    }else {
+      deleteFolders(path)
+    }
+  }
+}
+
 
 const updatePackageJSON = (projectName) => {
   const packageJsonPath = path.join(process.cwd(), `${projectName}/package.json`);
@@ -109,5 +119,6 @@ module.exports = {
   copyFileSync,
   copyContentOfFolder,
   deleteFolders,
-  updatePackageJSON
+  updatePackageJSON,
+  deleteFile
 };
